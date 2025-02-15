@@ -2,6 +2,8 @@ from catalog import SupermarketCatalog
 
 
 class FakeCatalog(SupermarketCatalog):
+    """An in-memory implementation of the catalog for testing purposes."""
+
     def __init__(self):
         self.products = {}
         self.prices = {}
