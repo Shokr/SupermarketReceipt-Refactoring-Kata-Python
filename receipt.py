@@ -18,6 +18,14 @@ class Receipt:
         self._items: List[ReceiptItem] = []
         self._discounts: List[Discount] = []
 
+    @property
+    def items(self):
+        return self._items  # Expose _items as a property
+
+    @property
+    def discounts(self):
+        return self._discounts  # Expose _discounts as a property
+
     def add_product(self, product: Product, quantity: Decimal,
                     unit_price: Decimal, total_price: Decimal):
         self._items.append(ReceiptItem(product, quantity, unit_price, total_price))
@@ -28,4 +36,4 @@ class Receipt:
     def total_price(self) -> Decimal:
         items_total = sum(item.total_price for item in self._items)
         discounts_total = sum(discount.discount_amount for discount in self._discounts)
-        return max(items_total + discounts_total, Decimal(0))
+        return max(items_total - discounts_total, Decimal(0))

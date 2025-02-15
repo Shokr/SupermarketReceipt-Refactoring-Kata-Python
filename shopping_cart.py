@@ -31,7 +31,7 @@ class ShoppingCart:
 
         :param product: The product to add.
         """
-        self.add_item_quantity(product, 1.0)
+        self.add_item_quantity(product, Decimal(1))
 
     def add_item_quantity(self, product: Product, quantity: Decimal):
         if quantity <= Decimal(0):
@@ -50,5 +50,5 @@ class ShoppingCart:
                     receipt.add_discount(Discount(
                         product=product,
                         description=offer.offer_type.description,
-                        discount_amount=-discount_amount
+                        discount_amount=discount_amount  # Positive value
                     ))

@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from model_objects import ProductUnit
+from model_objects import Discount, ProductUnit
 from receipt import Receipt, ReceiptItem
 
 
@@ -14,7 +14,7 @@ class ReceiptPrinter:
             lines.append(self._format_item(item))
         for discount in receipt.discounts:
             lines.append(self._format_discount(discount))
-        lines.append(self._format_total(receipt))
+        lines.append(self._format_total(receipt))  # Add total line
         return '\n'.join(lines)
 
     def _format_item(self, item: ReceiptItem) -> str:
@@ -23,6 +23,14 @@ class ReceiptPrinter:
         if item.quantity != Decimal(1):
             line += f"  {self._format_price(item.unit_price)} * {self._format_quantity(item)}\n"
         return line
+
+    def _format_discount(self, discount: Discount) -> str:
+        formatted_amount = self._format_price(discount.discount_amount)
+        return self._format_line(discount.description, f"-{formatted_amount}")
+
+    def _format_total(self, receipt: Receipt) -> str:
+        total = receipt.total_price()
+        return self._format_line("Total", self._format_price(total))
 
     def _format_quantity(self, item: ReceiptItem) -> str:
         if item.product.unit == ProductUnit.EACH:
