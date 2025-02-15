@@ -1,4 +1,4 @@
-approvaltests
-python-dateutil
-pytest-approvaltests
-
+# requirements.txt
+approvaltests==7.3.0
+python-dateutil==2.8.2
+pytest-approvaltests==0.5.0
