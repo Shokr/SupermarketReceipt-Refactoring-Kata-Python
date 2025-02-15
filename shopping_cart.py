@@ -1,4 +1,7 @@
-from model_objects import Discount, ProductQuantity, SpecialOfferType
+from decimal import Decimal
+from typing import List
+
+from model_objects import Discount, Product, ProductQuantity
 
 
 class ShoppingCart:
@@ -9,8 +12,8 @@ class ShoppingCart:
 
     def __init__(self):
         """Initializes an empty shopping cart."""
-        self._items = []
-        self._product_quantities = {}
+        self._items: List[ProductQuantity] = []
+        self._product_quantities: dict[Product, Decimal] = {}
 
     @property
     def items(self):
@@ -30,63 +33,22 @@ class ShoppingCart:
         """
         self.add_item_quantity(product, 1.0)
 
-    def add_item_quantity(self, product, quantity):
-        """
-        Adds a specified quantity of a product to the cart.
-
-        :param product: The product to add.
-        :param quantity: The quantity of the product.
-        :raises ValueError: If quantity is not positive.
-        """
-        if quantity <= 0:
-            raise ValueError("Quantity must be greater than zero.")
-
+    def add_item_quantity(self, product: Product, quantity: Decimal):
+        if quantity <= Decimal(0):
+            raise ValueError("Quantity must be positive")
         self._items.append(ProductQuantity(product, quantity))
-        self._product_quantities[product] = self._product_quantities.get(product, 0) + quantity
+        self._product_quantities[product] = self._product_quantities.get(product, Decimal(0)) + quantity
 
     def handle_offers(self, receipt, offers, catalog):
-        """
-        Applies available offers to the shopping cart and updates the receipt with discounts.
-
-        :param receipt: The receipt object where discounts are recorded.
-        :param offers: A dictionary of product offers.
-        :param catalog: The catalog to retrieve product prices.
-        """
         for product, quantity in self._product_quantities.items():
-            if product not in offers:
-                continue
-
-            offer = offers[product]
-            unit_price = catalog.unit_price(product)
-            quantity_as_int = int(quantity)
-            discount = None
-            x = 1
-
-            if offer.offer_type == SpecialOfferType.THREE_FOR_TWO:
-                x = 3
-                if quantity_as_int >= 3:
-                    number_of_x = quantity_as_int // x
-                    discount_amount = number_of_x * unit_price
-                    discount = Discount(product, "3 for 2", -discount_amount)
-
-            elif offer.offer_type == SpecialOfferType.TWO_FOR_AMOUNT:
-                x = 2
-                if quantity_as_int >= 2:
-                    total = offer.argument * (quantity_as_int // x) + (quantity_as_int % 2 * unit_price)
-                    discount_amount = unit_price * quantity - total
-                    discount = Discount(product, f"2 for {offer.argument}", -discount_amount)
-
-            elif offer.offer_type == SpecialOfferType.FIVE_FOR_AMOUNT:
-                x = 5
-                if quantity_as_int >= 5:
-                    number_of_x = quantity_as_int // x
-                    discount_total = unit_price * quantity - (
-                            offer.argument * number_of_x + quantity_as_int % 5 * unit_price)
-                    discount = Discount(product, f"{x} for {offer.argument}", -discount_total)
-
-            elif offer.offer_type == SpecialOfferType.TEN_PERCENT_DISCOUNT:
-                discount = Discount(product, f"{offer.argument}% off",
-                                    -quantity * unit_price * offer.argument / 100.0)
-
-            if discount:
-                receipt.add_discount(discount)
+            if offer := offers.get(product):
+                unit_price = catalog.unit_price(product)
+                discount_amount = offer.offer_type.calculate_discount(
+                    quantity, unit_price, offer.argument
+                )
+                if discount_amount > Decimal(0):
+                    receipt.add_discount(Discount(
+                        product=product,
+                        description=offer.offer_type.description,
+                        discount_amount=-discount_amount
+                    ))

@@ -108,6 +108,38 @@ class SpecialOfferType(Enum):
         self.display_text = display_text
         self.description = description
 
+    def calculate_discount(self, quantity: Decimal, unit_price: Decimal, argument: Decimal) -> Decimal:
+        if self == SpecialOfferType.THREE_FOR_TWO:
+            return self._three_for_two(quantity, unit_price)
+        elif self == SpecialOfferType.TWO_FOR_AMOUNT:
+            return self._two_for_amount(quantity, unit_price, argument)
+        elif self == SpecialOfferType.FIVE_FOR_AMOUNT:
+            return self._five_for_amount(quantity, unit_price, argument)
+        elif self == SpecialOfferType.TEN_PERCENT_DISCOUNT:
+            return self._percentage_discount(quantity, unit_price, argument)
+        return Decimal(0)
+
+    def _three_for_two(self, quantity: Decimal, unit_price: Decimal) -> Decimal:
+        groups_of_three = quantity // Decimal(3)
+        return groups_of_three * unit_price
+
+    def _two_for_amount(self, quantity: Decimal, unit_price: Decimal, argument: Decimal) -> Decimal:
+        if quantity >= Decimal(2):
+            total = (quantity // Decimal(2)) * argument + (quantity % Decimal(2)) * unit_price
+            return quantity * unit_price - total
+        return Decimal(0)
+
+    def _five_for_amount(self, quantity: Decimal, unit_price: Decimal, argument: Decimal) -> Decimal:
+        if quantity >= Decimal(5):
+            groups_of_five = quantity // Decimal(5)
+            remaining_items = quantity % Decimal(5)
+            discounted_total = (groups_of_five * argument) + (remaining_items * unit_price)
+            return (quantity * unit_price) - discounted_total
+        return Decimal(0)
+
+    def _percentage_discount(self, quantity: Decimal, unit_price: Decimal, argument: Decimal) -> Decimal:
+        return (quantity * unit_price * argument) / Decimal(100)
+
 
 @dataclass(frozen=True)
 class Offer:
@@ -123,19 +155,14 @@ class Offer:
     product: Product
     argument: Decimal
 
-    def __post_init__(self) -> None:
-        """Validates offer configuration."""
+    def __post_init__(self):
         if not isinstance(self.offer_type, SpecialOfferType):
             raise ValueError("Invalid offer type")
         if not isinstance(self.product, Product):
-            raise ValueError("Invalid product reference")
+            raise ValueError("Invalid product")
+        if self.argument <= Decimal(0):
+            raise ValueError("Offer argument must be positive")
 
-        if self.offer_type == SpecialOfferType.TEN_PERCENT_DISCOUNT:
-            if not (Decimal(0) < self.argument < Decimal(100)):
-                raise ValueError("Discount percentage must be between 0-100")
-        else:
-            if self.argument <= Decimal(0):
-                raise ValueError("Offer amount must be positive")
 
 
 @dataclass(frozen=True)
